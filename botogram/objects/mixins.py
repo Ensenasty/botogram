@@ -89,7 +89,7 @@ class ChatMixin:
         elif url is not None and file_id is None and path is None:
             args = url
             file = None
-        elif path is None and file_id is None and url is None:
+        elif path is None and file_id is None:
             raise TypeError("path or file_id or URL is missing")
         else:
             raise TypeError("Only one among path, file_id and URL must be" +
@@ -121,7 +121,7 @@ class ChatMixin:
             if syntax is not None:
                 syntax = syntaxes.guess_syntax(caption, syntax)
                 args["parse_mode"] = syntax
-        files = dict()
+        files = {}
         args["photo"], files["photo"] = self._get_file_args(path,
                                                             file_id,
                                                             url)
@@ -150,7 +150,7 @@ class ChatMixin:
         if title is not None:
             args["title"] = title
 
-        files = dict()
+        files = {}
         args["audio"], files["audio"] = self._get_file_args(path,
                                                             file_id,
                                                             url)
@@ -181,7 +181,7 @@ class ChatMixin:
         if syntax is not None:
             args["parse_mode"] = syntax
 
-        files = dict()
+        files = {}
         args["voice"], files["voice"] = self._get_file_args(path,
                                                             file_id,
                                                             url)
@@ -207,7 +207,7 @@ class ChatMixin:
                 syntax = syntaxes.guess_syntax(caption, syntax)
                 args["parse_mode"] = syntax
 
-        files = dict()
+        files = {}
         args["video"], files["video"] = self._get_file_args(path,
                                                             file_id,
                                                             url)
@@ -230,7 +230,7 @@ class ChatMixin:
         if diameter is not None:
             args["length"] = diameter
 
-        files = dict()
+        files = {}
         args["video_note"], files["video_note"] = self._get_file_args(path,
                                                                       file_id,
                                                                       None)
@@ -261,7 +261,7 @@ class ChatMixin:
         if height is not None:
             args["height"] = height
 
-        files = dict()
+        files = {}
         args["animation"], files["animation"] = self._get_file_args(path,
                                                                     file_id,
                                                                     url)
@@ -285,7 +285,7 @@ class ChatMixin:
                 syntax = syntaxes.guess_syntax(caption, syntax)
                 args["parse_mode"] = syntax
 
-        files = dict()
+        files = {}
         args["document"], files["document"] = self._get_file_args(path,
                                                                   file_id,
                                                                   url)
@@ -345,7 +345,7 @@ class ChatMixin:
 
         args = self._get_call_args(reply_to, extra, attach, notify)
 
-        files = dict()
+        files = {}
         args["sticker"], files["sticker"] = self._get_file_args(path,
                                                                 file_id,
                                                                 url)
@@ -438,10 +438,7 @@ class MessageMixin:
         if attach is not None:
             if not hasattr(attach, "_serialize_attachment"):
                 raise ValueError("%s is not an attachment" % attach)
-            if self.is_inline:
-                chat = None
-            else:
-                chat = self.chat
+            chat = None if self.is_inline else self.chat
             args["reply_markup"] = json.dumps(attach._serialize_attachment(
                 chat
             ))
@@ -453,10 +450,12 @@ class MessageMixin:
         if hasattr(to, "id"):
             to = to.id
 
-        args = dict()
-        args["chat_id"] = to
-        args["from_chat_id"] = self.chat.id
-        args["message_id"] = self.message_id
+        args = {
+            'chat_id': to,
+            'from_chat_id': self.chat.id,
+            'message_id': self.message_id,
+        }
+
         if not notify:
             args["disable_notification"] = True
 
@@ -517,9 +516,12 @@ class MessageMixin:
     @_require_api
     def edit_live_location(self, latitude, longitude, extra=None, attach=None):
         """Edit this message's live location position"""
-        args = {"message_id": self.id, "chat_id": self.chat.id}
-        args["latitude"] = latitude
-        args["longitude"] = longitude
+        args = {
+            'message_id': self.id,
+            'chat_id': self.chat.id,
+            'latitude': latitude,
+            'longitude': longitude,
+        }
 
         if extra is not None:
             _deprecated_message(
@@ -690,10 +692,7 @@ class MessageMixin:
     @_require_api
     def stop_poll(self, extra=None, attach=None):
         """Stops a poll"""
-        args = dict()
-        args["chat_id"] = self.chat.id
-        args["message_id"] = self.id
-
+        args = {'chat_id': self.chat.id, 'message_id': self.id}
         if extra is not None:
             _deprecated_message(
                 "The extra parameter", "1.0", "use the attach parameter", -3
@@ -746,7 +745,7 @@ class Album:
             args["media"] = file_id
         elif url is not None and file_id is None and path is None:
             args["media"] = url
-        elif path is None and file_id is None and url is None:
+        elif path is None and file_id is None:
             raise TypeError("path or file_id or URL is missing")
         else:
             raise TypeError("Only one among path, file_id and URL must be" +
@@ -773,7 +772,7 @@ class Album:
             args["media"] = file_id
         elif url is not None and file_id is None and path is None:
             args["media"] = url
-        elif path is None and file_id is None and url is None:
+        elif path is None and file_id is None:
             raise TypeError("path or file_id or URL is missing")
         else:
             raise TypeError("Only one among path, file_id and URL must be" +
@@ -840,7 +839,7 @@ class InlineMixin:
             args[result_type + "_file_id"] = file_id
         elif file_id is None and url is not None:
             args[result_type + "_url"] = url
-        elif file_id is None and url is None:
+        elif file_id is None:
             raise TypeError("file_id or URL is missing")
         else:
             raise TypeError("Only one among file_id and URL must be passed")
@@ -1050,7 +1049,7 @@ class InlineMixin:
             args["mpeg4_file_id"] = file_id
         elif file_id is None and url is not None:
             args["mpeg4_url"] = url
-        elif file_id is None and url is None:
+        elif file_id is None:
             raise TypeError("file_id or URL is missing")
         else:
             raise TypeError("Only one among file_id and URL must be passed")

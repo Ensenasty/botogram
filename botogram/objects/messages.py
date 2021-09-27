@@ -140,11 +140,7 @@ class ParsedTextEntity(BaseObject):
                 self._type = "text_link"
 
         elif value == "mention":
-            if self.user is not None:
-                self._type = "text_mention"
-            else:
-                self._type = "mention"
-
+            self._type = "text_mention" if self.user is not None else "mention"
         elif value in self.replace_types_inverse:
             self._type = self.replace_types_inverse[value]
         else:
@@ -251,11 +247,7 @@ class ParsedText:
 
     def serialize(self):
         """Serialize this object"""
-        result = []
-        for entity in self._original_entities:
-            result.append(entity.serialize())
-
-        return result
+        return [entity.serialize() for entity in self._original_entities]
 
     @_require_message
     def _calculate_entities(self):
@@ -292,14 +284,11 @@ class ParsedText:
 
     def filter(self, *types, exclude=False):
         """Get only some types of entities"""
-        result = []
-        for entity in self._calculate_entities():
-            # If the entity type is in the allowed ones and exclude is False OR
-            # if the entity type isn't in the allowed ones and exclude is True
-            if (entity.type in types) ^ exclude:
-                result.append(entity)
-
-        return result
+        return [
+            entity
+            for entity in self._calculate_entities()
+            if (entity.type in types) ^ exclude
+        ]
 
     # Provide a basic list-like interface; you can always mutate this object to
     # a list with list(self) if you need more advanced methods
@@ -384,10 +373,7 @@ class Message(BaseObject, mixins.MessageMixin):
 
     def __init__(self, data, api=None):
         super().__init__(data, api)
-        if self.chat is None:
-            self.is_inline = True
-        else:
-            self.is_inline = False
+        self.is_inline = self.chat is None
         # Create the parsed_text instance even if there are no entities in the
         # current text
         if self.text is not None and self.parsed_text is None:
@@ -444,9 +430,11 @@ class Message(BaseObject, mixins.MessageMixin):
         if self.chat.type == "channel":
             return self.sender
 
-        if self._forward_from_chat is not None:
-            if self.forward_from.type == "channel":
-                return self._forward_from
+        if (
+            self._forward_from_chat is not None
+            and self.forward_from.type == "channel"
+        ):
+            return self._forward_from
 
     @property
     @utils.deprecated("Message.new_chat_participant", "1.0",
