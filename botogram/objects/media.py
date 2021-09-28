@@ -57,10 +57,7 @@ class ChatPhoto(BaseObject, mixins.FileMixin):
 
     def save(self, *args, small=False, **kwargs):
         """Workaround for dealing with big and small chat photos"""
-        if small:
-            self.file_id = self.small
-        else:
-            self.file_id = self.big
+        self.file_id = self.small if small else self.big
         super(ChatPhoto, self).save(*args, **kwargs)
         del self.file_id
 
@@ -88,9 +85,7 @@ class Photo(mixins.FileMixin):
             self.sizes.append(PhotoSize(size, api))
 
         # Calculate the smaller and the biggest sizes
-        with_size = {}
-        for size in self.sizes:
-            with_size[size.height * size.width] = size
+        with_size = {size.height * size.width: size for size in self.sizes}
         self.smallest = with_size[min(with_size.keys())]
         self.biggest = with_size[max(with_size.keys())]
 
@@ -113,11 +108,7 @@ class Photo(mixins.FileMixin):
 
     def serialize(self):
         """Serialize this object"""
-        result = []
-        for size in self.sizes:
-            result.append(size.serialize())
-
-        return result
+        return [size.serialize() for size in self.sizes]
 
 
 class Audio(BaseObject, mixins.FileMixin):
@@ -305,3 +296,15 @@ class VideoNote(BaseObject, mixins.FileMixin):
         "file_size": int,
     }
     _check_equality_ = "file_id"
+
+
+class Dice(BaseObject):
+    """Telegram API representation of a venue
+
+    https://core.telegram.org/bots/api#dice
+    """
+
+    required = {
+        "emoji": str,
+        "value": int
+    }
